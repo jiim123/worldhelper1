@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .send-button {
+      @apply p-3 rounded-lg bg-black text-white 
+             hover:bg-gray-800 transition-colors
+             disabled:bg-gray-300 disabled:cursor-not-allowed;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  .logo-image {
+    @apply h-8 w-auto;
+  }

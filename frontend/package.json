@@ -1,7 +1,7 @@
 {
-  "name": "minikit-react-template",
+  "name": "world-helper",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,13 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^3.12.1",
     "@types/node": "20",
     "@worldcoin/minikit-js": "0.0.27-internal-alpha",
     "dotenv": "^16.4.5",
     "eruda": "^3.3.0",
     "next-auth": "^4.24.8",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
