@@ -697,7 +697,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
       {/* Messages Container */}
       <div 
         ref={chatContainerRef}
-          className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6" // Increased pt-16 to pt-20 and space-y-4 to space-y-6
+          className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6 text-sm"
 >
           {messages.map((message: Message, index: number) => (
             <div
