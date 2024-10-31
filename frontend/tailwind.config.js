@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    // More specific paths
     "./src/components/**/*.{js,ts,jsx,tsx}",
     "./src/pages/**/*.{js,ts,jsx,tsx}",
     "./src/app/**/*.{js,ts,jsx,tsx}",
@@ -9,10 +8,13 @@ export default {
     "./index.html",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'archivo': ['Archivo', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
-  // Add this to ensure proper file watching
   watchOptions: {
     ignored: ['**/node_modules/**', '**/.git/**'],
   },

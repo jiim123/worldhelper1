@@ -722,12 +722,12 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
 {/* Message bubble */}
 <div
   className={`
-    max-w-[85%] rounded-2xl px-4 py-3 
+    max-w-[85%] rounded-2xl px-4 py-3 font-archivo
     ${message.role === 'user' 
-      ? 'bg-black text-white rounded-br-none ml-4' 
-      : 'bg-white text-gray-800 rounded-bl-none mr-4 shadow-md'
+      ? 'bg-[#171717] text-[#e5e5e5] rounded-br-none ml-4 text-s'   
+      : 'bg-[#ffffff] text-[#09090b] rounded-bl-none mr-4 border border-[#e5e7eb] text-s leading-5'
     }
-    relative
+    relative hover:border-[#a1a1aa] transition-colors duration-200
   `}
 >
   <MessageContent content={message.content} />
@@ -774,7 +774,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
         className={`
           flex-1 p-3 border rounded-lg bg-gray-60 
           focus:outline-none focus:ring-2 focus:ring-black/5 
-          focus:border-black text-[15px]
+          focus:border-black text-[14px]
           ${inputError ? 'border-red-500' : ''}
         `}
         disabled={isLoading}
