@@ -5,7 +5,7 @@ import { ReactNode, useEffect } from "react";
 
 export const Eruda = (props: { children: ReactNode }) => {
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
       try {
         eruda.init();
       } catch (error) {

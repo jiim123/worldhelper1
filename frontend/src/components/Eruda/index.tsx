@@ -5,7 +5,8 @@ const Eruda = lazy(() =>
 );
 
 export const ErudaProvider = (props: { children: ReactNode }) => {
-  if (process.env.PROD) {
+  // Only show in development
+  if (process.env.NODE_ENV === 'production') {
     return props.children;
   }
 
