@@ -385,7 +385,7 @@ export default function ChatInterface() {
             <div key={index} className="whitespace-pre-wrap my-1">
               {part.split('\n').map((line, i) => {
                 // Format URLs with black color
-                let formattedLine = line.replace(urlPattern, (match, space, url, punctuation = '') => {
+                let formattedLine = line.replace(urlPattern, (_match, space, url, punctuation = '') => {
                   const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
                   return `${space}<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-[#09090b] hover:text-[#09090b] underline whitespace-wrap overflow-hidden text-ellipsis">${url}</a>${punctuation}`;
                 });
