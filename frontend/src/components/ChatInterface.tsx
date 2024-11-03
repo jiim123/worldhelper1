@@ -4,61 +4,61 @@ import Logo from '../logo.svg';
 import emailjs from '@emailjs/browser';
 
 interface Message {
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: string;
-}
+    content: string;
+    role: 'user' | 'assistant';
+    timestamp: string;
+    feedbackGiven?: boolean;
+  }
 
-// Security helper functions
 const sanitizeInput = (input: string): string => {
-  const sanitized = input.replace(/<[^>]*>/g, '');
-  return sanitized.replace(/[^\w\s.,!?-]/g, '');
-};
-
+    const sanitized = input.replace(/<[^>]*>/g, '');
+    return sanitized.replace(/[^\w\s.,!?-]/g, '');
+  };
 
 const isValidInput = (input: string): boolean => {
-  const dangerousPatterns = [
-    /javascript:/i,
-    /data:/i,
-    /vbscript:/i,
-    /onload=/i,
-    /onerror=/i,
-    /<script/i,
-    /eval\(/i,
-    /execute\(/i
-  ];
-  return !dangerousPatterns.some(pattern => pattern.test(input));
+    const dangerousPatterns = [
+      /javascript:/i,
+      /data:/i,
+      /vbscript:/i,
+      /onload=/i,
+      /onerror=/i,
+      /<script/i,
+      /eval\(/i,
+      /execute\(/i
+    ];
+    return !dangerousPatterns.some(pattern => pattern.test(input));
 };
 
 const MenuIcon = () => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-  >
-    <line x1="4" y1="12" x2="20" y2="12"></line>
-    <line x1="4" y1="6" x2="20" y2="6"></line>
-    <line x1="4" y1="18" x2="20" y2="18"></line>
-  </svg>
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+    </svg>
 );
 
 export default function ChatInterface() {
-  const formatTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: 'numeric',
-      hour12: true 
-    });
-  };
+    // Utility functions
+    const formatTime = () => {
+      const now = new Date();
+      return now.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: 'numeric',
+        hour12: true 
+      });
+    };
 
-  // Initialize messages from localStorage or default
+  // Initialize messages from localStorage
   const initialMessages = (): Message[] => {
     try {
       const savedMessages = localStorage.getItem('chatMessages');
@@ -69,13 +69,13 @@ export default function ChatInterface() {
       console.warn('Error loading saved messages:', error);
     }
     return [{
-      content: `Hi! 👋 I'm World Helper. How can I assist you today?`,
-      role: 'assistant' as const,
+      content: `Hi! 👋 I'm World Helper. Ask me anything about World!`,
+      role: 'assistant',
       timestamp: formatTime()
     }];
   };
 
-  // Initialize conversationId from localStorage or generate new
+  // Initialize conversationId
   const initialConversationId = () => {
     try {
       const savedId = localStorage.getItem('conversationId');
@@ -88,34 +88,37 @@ export default function ChatInterface() {
     return newId;
   };
   
+  // State management
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('main');
+  const [currentView, setCurrentView] = useState<DrawerView>('main');
   const [inputMessage, setInputMessage] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId] = useState<string>(initialConversationId);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [, setError] = useState<string | null>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
   const [reportText, setReportText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+  // Refs
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
   type DrawerView = 'main' | 'about' | 'links' | 'privacy' | 'report';
 
+  // Effects
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [isLoading]); // Refocus after loading state changes
+  }, [isLoading]);
 
-  // Save messages to localStorage whenever they change
   useEffect(() => {
     try {
-      const messagesToStore = messages.slice(-100); // Keep last 100 messages
+      const messagesToStore = messages.slice(-100);
       localStorage.setItem('chatMessages', JSON.stringify(messagesToStore));
     } catch (error) {
       console.warn('Error saving messages:', error);
@@ -127,7 +130,6 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  // Handle storage changes across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'chatMessages' && e.newValue) {
@@ -143,7 +145,6 @@ export default function ChatInterface() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Save state when app goes to background
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
@@ -159,13 +160,12 @@ export default function ChatInterface() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [messages]);
 
-  // Existing useEffects
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
         setIsDrawerOpen(false);
       }
-    }
+    };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -177,12 +177,13 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
+  // Input handling
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     setInputError(null);
 
-    if (rawInput.length > 500) {
-      setInputError('Message is too long (max 500 characters)');
+    if (rawInput.length > 800) {
+      setInputError('Message is too long (max 800 characters)');
       return;
     }
 
@@ -311,76 +312,172 @@ export default function ChatInterface() {
     }
   };
 
-  // Add this formatting component
-const MessageContent: React.FC<{ content: string }> = ({ content }) => {
-  const formatMessage = (text: string) => {
-    // Split on code blocks
-    const parts = text.split(/(```[\s\S]*?```)/);
+  const MessageContent: React.FC<{ content: string }> = ({ content }) => {
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     
-    return parts.map((part, index) => {
-      if (part.startsWith('```')) {
-        const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
-        if (!match) return part;
-        
-        const [, language = '', code] = match;
-        return (
-          <pre key={index} className="my-1 p-4 bg-stone-800 rounded-lg overflow-x-auto">
-            {language && (
-              <div className="text-xs text-stone-400 mb-1">{language}</div>
-            )}
-            <code className="text-stone-100 font-mono text-sm">{code.trim()}</code>
-          </pre>
-        );
+    const handleCopy = async (code: string, index: number) => {
+      try {
+        await navigator.clipboard.writeText(code.trim());
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
       }
-      
-
-      // Format normal text with markdown-like syntax
-      return (
-        <div key={index} className="whitespace-pre-wrap">
-          {part.split('\n').map((line, i) => {
-            // Bold text
-            line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // Bullet points
-            if (line.trim().startsWith('•')) {
-              return (
-                <div key={i} className="flex items-start space-x-2 my-1">
-                  <span className="text-gray-400">•</span>
-                  <span dangerouslySetInnerHTML={{ __html: line.slice(1) }} />
-                </div>
-              );
-            }
-
-            // Numbered lists
-            const numberMatch = line.match(/^\d+\./);
-            if (numberMatch) {
-              return (
-                <div key={i} className="flex items-start space-x-2 my-1">
-                  <span className="text-gray-400 min-w-[20px]">{numberMatch[0]}</span>
-                  <span dangerouslySetInnerHTML={{ 
-                    __html: line.slice(numberMatch[0].length) 
-                  }} />
-                </div>
-              );
-            }
-
-            return line ? (
-              <p key={i} className="my-1" dangerouslySetInnerHTML={{ __html: line }} />
-            ) : <br key={i} />;
-          })}
-        </div>
+    };
+  
+    const CopyIcon = () => (
+        <svg 
+          className="w-4 h-4" 
+          fill="none" 
+          strokeWidth="1" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          />
+        </svg>
       );
-    });
+
+      const formatMessage = (text: string) => {
+        const parts = text.split(/(```[\s\S]*?```)/);
+        const urlPattern = /(\s|^)((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?world\.org\/[^\s.,!?]*|https?:\/\/[^\s]+)([.,!?])?/g;
+        
+        return parts.map((part, index) => {
+          // Code block formatting
+          if (part.startsWith('```')) {
+            const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
+            if (!match) return part;
+            
+            const [, language = '', code] = match;
+            const isCopied = copiedIndex === index;
+
+            return (
+              <pre key={index} className="my-2 bg-blue-950 rounded-lg p-3 relative">
+                <div className="flex justify-between items-center mb-2">
+                  {language && (
+                    <div className="text-xs text-indigo-50">{language}</div>
+                  )}
+                  <button
+                    onClick={() => handleCopy(code, index)}
+                    className={`
+                      text-xs px-2 py-1 rounded absolute top-2 right-2 bg-black text-white
+                      transition-all duration-200 flex items-center gap-1
+                      ${isCopied 
+                        ? 'bg-green-800 text-green-100' 
+                        : 'bg-neutral-800 text-stone-400 hover:text-stone-200'
+                      }
+                    `}
+                  >
+                    {isCopied ? 'Copied!' : <CopyIcon />}
+                  </button>
+                </div>
+                <code className="text-stone-100 font-mono text-xs block p-0.5">
+                  {code.trim()}
+                </code>
+              </pre>
+            );
+          };
+          
+          // Regular text formatting
+          return (
+            <div key={index} className="whitespace-pre-wrap my-1">
+              {part.split('\n').map((line, i) => {
+                // Format URLs with black color
+                let formattedLine = line.replace(urlPattern, (match, space, url, punctuation = '') => {
+                  const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
+                  return `${space}<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-[#09090b] hover:text-[#09090b] underline whitespace-wrap overflow-hidden text-ellipsis">${url}</a>${punctuation}`;
+                });
+
+                // Then format bold text
+                formattedLine = formattedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Bullet points
+                if (line.trim().startsWith('•')) {
+                  return (
+                    <div className="my-1 pl-3">
+                      <div key={i} className="flex items-start space-x-2 py-0.5">
+                        <span className="text-black min-w-[12px]">•</span>
+                        <span dangerouslySetInnerHTML={{ __html: formattedLine.slice(1) }} />
+                      </div>
+                    </div>
+                  );
+                }
+          
+                // Numbered lists
+                const numberMatch = line.match(/^\d+\./);
+                if (numberMatch) {
+                  return (
+                    <div className="my-1 pl-3">
+                      <div key={i} className="flex items-start space-x-2 py-0.5">
+                        <span className="text-gray-400 min-w-[16px]">{numberMatch[0]}</span>
+                        <span dangerouslySetInnerHTML={{ 
+                          __html: formattedLine.slice(numberMatch[0].length) 
+                        }} />
+                      </div>
+                    </div>
+                  );
+                }
+          
+                // Regular paragraph
+                return line ? (
+                  <p key={i} className="my-1.5" dangerouslySetInnerHTML={{ __html: formattedLine }} />
+                ) : null;
+              })}
+            </div>
+          );
+        });
+      };
+  
+    return (
+      <div className="message-content space-y-3">
+        {formatMessage(content)}
+      </div>
+    );
   };
 
-  return <div className="message-content">{formatMessage(content)}</div>;
-};
+  useEffect(() => {
+    const smoothScroll = () => {
+      if (!chatContainerRef.current) return;
+      
+      const targetPosition = chatContainerRef.current.scrollHeight;
+      const startPosition = chatContainerRef.current.scrollTop;
+      const distance = targetPosition - startPosition;
+      const duration = 750; // Increase this number for slower/smoother scroll
+      let start: number;
+  
+      const animation = (currentTime: number) => {
+        if (!start) start = currentTime;
+        const timeElapsed = currentTime - start;
+        const progress = Math.min(timeElapsed / duration, 1);
+  
+        // Easing function for smoother animation
+        const easeOutCubic = (x: number): number => {
+          return 1 - Math.pow(1 - x, 3);
+        };
+  
+        if (chatContainerRef.current) {
+          const position = startPosition + distance * easeOutCubic(progress);
+          chatContainerRef.current.scrollTop = position;
+        }
+  
+        if (progress < 1) {
+          requestAnimationFrame(animation);
+        }
+      };
+  
+      requestAnimationFrame(animation);
+    };
+  
+    smoothScroll();
+  }, [messages]);  
 
   // New clear chat function
   const clearChatHistory = () => {
     try {
       const initialMessage: Message[] = [{
-        content: `Hi! 👋 I'm World Helper. How can I assist you today?`,
+        content: `Hi! 👋 I'm World Helper. Ask me anything about World!`,
         role: 'assistant' as const,
         timestamp: formatTime()
       }];
@@ -638,7 +735,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
                 setIsDrawerOpen(false);
                 setCurrentView('main');
               }}
-              className="w-full px-4 py-3 text-center bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="w-full px-4 py-3 text-center bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-archivo"
             >
               Close
             </button>
@@ -652,7 +749,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <div className="fixed top-0 w-full bg-white border-b z-10">
+      <div className="fixed top-0 w-full bg-white border-b z-10 drop-shadow-md">
         <div className="flex justify-between items-center px-3 py-3">
           <div className="logo-container">
             <img 
@@ -697,7 +794,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
       {/* Messages Container */}
       <div 
         ref={chatContainerRef}
-          className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6 text-sm"
+        className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6 text-sm font-archivo transition-all duration-750 ease-out"
 >
           {messages.map((message: Message, index: number) => (
             <div
@@ -719,10 +816,12 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
               </span>
             </div>
 
+
+
 {/* Message bubble */}
 <div
   className={`
-    max-w-[85%] rounded-2xl px-4 py-3 font-archivo
+    max-w-[100%] rounded-2xl px-4 py-3 font-archivo transition delay-250 duration-300 ease-in-out
     ${message.role === 'user' 
       ? 'bg-[#171717] text-[#e5e5e5] rounded-br-none ml-4 text-s'   
       : 'bg-[#ffffff] text-[#09090b] rounded-bl-none mr-4 border border-[#e5e7eb] text-s leading-5'
@@ -757,7 +856,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
       </div>
 
       {/* Input Container */}
-<div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 font-archivo drop-shadow-2xl">
   <form 
     onSubmit={sendMessage}
     className="flex flex-col gap-2 max-w-screen-md mx-auto"
@@ -770,7 +869,7 @@ const MessageContent: React.FC<{ content: string }> = ({ content }) => {
         value={inputMessage}
         onChange={handleInputChange}
         placeholder="Type a message..."
-        maxLength={500}
+        maxLength={800}
         className={`
           flex-1 p-3 border rounded-lg bg-gray-60 
           focus:outline-none focus:ring-2 focus:ring-black/5 

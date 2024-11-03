@@ -20,6 +20,10 @@
     }
   }
   
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
   .logo-image {
     @apply h-8 w-auto;
   }
