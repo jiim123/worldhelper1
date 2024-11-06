@@ -1058,7 +1058,7 @@ useEffect(() => {
     ${showQuickActions ? 'translate-y-0' : 'translate-y-full'}
   `}
   style={{
-    bottom: '80px',
+    bottom: '90px',
     transitionProperty: 'transform',
   }}
 >
