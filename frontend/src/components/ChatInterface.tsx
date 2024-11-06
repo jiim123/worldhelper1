@@ -2,64 +2,75 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CHATBASE_API_KEY, CHATBOT_ID } from '../config/index';
 import Logo from '../logo.svg';
 import emailjs from '@emailjs/browser';
+import { 
+  BadgeHelp, 
+  MapPin,    
+  Bell,      
+  Code2,
+  Heart,
+  ScanEye,
+  GlobeLock
+} from 'lucide-react';
 
 interface Message {
-    content: string;
-    role: 'user' | 'assistant';
-    timestamp: string;
-    feedbackGiven?: boolean;
-  }
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  feedbackGiven?: boolean;
+}
 
+// Security helper functions
 const sanitizeInput = (input: string): string => {
-    const sanitized = input.replace(/<[^>]*>/g, '');
-    return sanitized.replace(/[^\w\s.,!?-]/g, '');
-  };
-
-const isValidInput = (input: string): boolean => {
-    const dangerousPatterns = [
-      /javascript:/i,
-      /data:/i,
-      /vbscript:/i,
-      /onload=/i,
-      /onerror=/i,
-      /<script/i,
-      /eval\(/i,
-      /execute\(/i
-    ];
-    return !dangerousPatterns.some(pattern => pattern.test(input));
+  const sanitized = input.replace(/<[^>]*>/g, '');
+  return sanitized.replace(/[^\w\s.,!?-]/g, '');
 };
 
+const isValidInput = (input: string): boolean => {
+  const dangerousPatterns = [
+    /javascript:/i,
+    /data:/i,
+    /vbscript:/i,
+    /onload=/i,
+    /onerror=/i,
+    /<script/i,
+    /eval\(/i,
+    /execute\(/i
+  ];
+  return !dangerousPatterns.some(pattern => pattern.test(input));
+};
+
+// Icons
 const MenuIcon = () => (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <line x1="4" y1="12" x2="20" y2="12"></line>
-      <line x1="4" y1="6" x2="20" y2="6"></line>
-      <line x1="4" y1="18" x2="20" y2="18"></line>
-    </svg>
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <line x1="4" y1="12" x2="20" y2="12"></line>
+    <line x1="4" y1="6" x2="20" y2="6"></line>
+    <line x1="4" y1="18" x2="20" y2="18"></line>
+  </svg>
 );
 
 export default function ChatInterface() {
-    // Utility functions
-    const formatTime = () => {
-      const now = new Date();
-      return now.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: 'numeric',
-        hour12: true 
-      });
-    };
+  // Utility functions
+  const formatTime = () => {
+    const now = new Date();
+    return now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: 'numeric',
+      hour12: true 
+    });
+  };
 
-  // Initialize messages from localStorage
-  const initialMessages = (): Message[] => {
+   // Initialize messages from localStorage
+   const initialMessages = (): Message[] => {
     try {
       const savedMessages = localStorage.getItem('chatMessages');
       if (savedMessages) {
@@ -88,26 +99,208 @@ export default function ChatInterface() {
     return newId;
   };
   
-  // State management
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<DrawerView>('main');
-  const [inputMessage, setInputMessage] = useState('');
-  const [inputError, setInputError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [conversationId] = useState<string>(initialConversationId);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [, setError] = useState<string | null>(null);
-  const [reportText, setReportText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  // Refs
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
-
+   // State management
+   const [messages, setMessages] = useState<Message[]>(initialMessages);
+   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+   const [currentView, setCurrentView] = useState<DrawerView>('main');
+   const [inputMessage, setInputMessage] = useState('');
+   const [inputError, setInputError] = useState<string | null>(null);
+   const [isLoading, setIsLoading] = useState(false);
+   const [conversationId] = useState<string>(initialConversationId);
+   const [showConfirmation, setShowConfirmation] = useState(false);
+   const [, setError] = useState<string | null>(null);
+   const [reportText, setReportText] = useState('');
+   const [isDragging, setIsDragging] = useState(false);
+   const [hasMoved, setHasMoved] = useState(false);
+   const [showQuickActions, setShowQuickActions] = useState(true);
+   const [startX, setStartX] = useState(0);
+   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+   const [lastScrollY, setLastScrollY] = useState(0);
+   const [scrollLeft, setScrollLeft] = useState(0);
+   const [canScrollLeft, setCanScrollLeft] = useState(false);
+   const [canScrollRight, setCanScrollRight] = useState(false);
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+ 
+   // Refs
+   const chatContainerRef = useRef<HTMLDivElement>(null);
+   const inputRef = useRef<HTMLInputElement>(null);
+   const drawerRef = useRef<HTMLDivElement>(null);
+   const scrollRef = useRef<HTMLDivElement>(null);
+   const moveThreshold = 5; // Minimum pixels moved to consider it a drag
   type DrawerView = 'main' | 'about' | 'links' | 'privacy' | 'report';
+
+    // Quick action handler
+    const handleQuickAction = async (message: string) => {
+      const sanitizedMessage = sanitizeInput(message.trim());
+      
+      if (!isValidInput(sanitizedMessage)) return;
+  
+      const userMessage: Message = {
+        content: sanitizedMessage,
+        role: 'user',
+        timestamp: formatTime()
+      };
+  
+      setMessages(prev => [...prev, userMessage]);
+      setInputMessage('');
+      setIsLoading(true);
+  
+      try {
+        const response = await fetch('https://www.chatbase.co/api/v1/chat', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CHATBASE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: messages.concat(userMessage),
+            chatbotId: CHATBOT_ID,
+            stream: true,
+            conversationId,
+            temperature: 0,
+            model: 'claude-3-5-sonnet'
+          })
+        });
+  
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+  
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response stream available');
+  
+        const decoder = new TextDecoder();
+        let assistantResponse = '';
+  
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          assistantResponse += chunk;
+          
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage?.role === 'assistant') {
+              lastMessage.content = assistantResponse;
+              return [...newMessages];
+            } else {
+              return [...newMessages, {
+                content: assistantResponse,
+                role: 'assistant',
+                timestamp: formatTime()
+              }];
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Chat error:', error);
+        setError('Sorry, something went wrong. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Add this useEffect to check scroll possibilities
+useEffect(() => {
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth);
+    }
+  };
+
+  // Initial check
+  checkScroll();
+
+  // Add scroll event listener to the scrollRef element
+  scrollRef.current?.addEventListener('scroll', checkScroll);
+  window.addEventListener('resize', checkScroll);
+
+  return () => {
+    scrollRef.current?.removeEventListener('scroll', checkScroll);
+    window.removeEventListener('resize', checkScroll);
+  };
+}, []);
+
+    const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      setIsDragging(true);
+      setHasMoved(false);
+      
+      const currentX = 'touches' in e 
+        ? e.touches[0].pageX - scrollRef.current!.offsetLeft
+        : e.pageX - scrollRef.current!.offsetLeft;
+        
+      setStartX(currentX);
+      setScrollLeft(scrollRef.current!.scrollLeft);
+    };
+
+    const handleDragEnd = () => {
+      setIsDragging(false);
+      // Keep hasMoved true for a short period to prevent click
+      setTimeout(() => {
+        setHasMoved(false);
+      }, 100);
+    };
+
+    const handleDragMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      if (!isDragging) return;
+      e.preventDefault();
+    
+      const x = 'touches' in e 
+        ? e.touches[0].pageX - scrollRef.current!.offsetLeft
+        : e.pageX - scrollRef.current!.offsetLeft;
+        
+      const walk = (x - startX) * 2;
+
+      // Check if moved more than threshold
+      if (Math.abs(walk) > moveThreshold) {
+        setHasMoved(true);
+      }
+
+      if (scrollRef.current) {
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+      }
+    };
+
+    // Modified throttle function with proper TypeScript typing
+    const throttle = <T extends (...args: any[]) => any>(func: T, limit: number): T => {
+      let inThrottle = false;
+      
+      return ((...args: Parameters<T>): ReturnType<T> | void => {
+        if (!inThrottle) {
+          func(...args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
+      }) as T;
+    };
+
+    useEffect(() => {
+      const controlHeader = () => {
+        if (typeof window !== 'undefined') {
+          const currentScrollY = window.scrollY;
+          const scrollingUp = currentScrollY < lastScrollY;
+          const atTop = currentScrollY < 10;
+          
+          if (scrollingUp || atTop) {
+            setIsHeaderVisible(true);
+          } else if (currentScrollY > 50 && currentScrollY > lastScrollY) {
+            setIsHeaderVisible(false);
+          }
+          
+          setLastScrollY(currentScrollY);
+        }
+      };
+    
+      const throttledControlHeader = throttle(controlHeader, 200);
+    
+      window.addEventListener('scroll', throttledControlHeader);
+      return () => {
+        window.removeEventListener('scroll', throttledControlHeader);
+      };
+    }, [lastScrollY]);
 
   // Effects
   useEffect(() => {
@@ -177,8 +370,8 @@ export default function ChatInterface() {
     }
   }, [messages]);
 
-  // Input handling
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+   // Message handling
+   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
     setInputError(null);
 
@@ -202,14 +395,13 @@ export default function ChatInterface() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading || inputError) return;
-    if (inputMessage.length > 500) return;
+    if (inputMessage.length > 800) return;
     if (!isValidInput(inputMessage)) return;
-  
+
     const sanitizedMessage = sanitizeInput(inputMessage.trim());
-  
     const userMessage: Message = {
       content: sanitizedMessage,
-      role: 'user' as const,
+      role: 'user',
       timestamp: formatTime()
     };
 
@@ -234,14 +426,10 @@ export default function ChatInterface() {
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response stream available');
-      }
+      if (!reader) throw new Error('No response stream available');
 
       const decoder = new TextDecoder();
       let assistantResponse = '';
@@ -260,12 +448,11 @@ export default function ChatInterface() {
             lastMessage.content = assistantResponse;
             return [...newMessages];
           } else {
-            const assistantMessage: Message = {
+            return [...newMessages, {
               content: assistantResponse,
-              role: 'assistant' as const,
+              role: 'assistant',
               timestamp: formatTime()
-            };
-            return [...newMessages, assistantMessage];
+            }];
           }
         });
       }
@@ -326,74 +513,71 @@ export default function ChatInterface() {
     };
   
     const CopyIcon = () => (
-        <svg 
-          className="w-4 h-4" 
-          fill="none" 
-          strokeWidth="1" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-          />
-        </svg>
-      );
+      <svg 
+        className="w-4 h-4" 
+        fill="none" 
+        strokeWidth="1" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path 
+          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
 
-      const formatMessage = (text: string) => {
-        const parts = text.split(/(```[\s\S]*?```)/);
-        const urlPattern = /(\s|^)((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?world\.org\/[^\s.,!?]*|https?:\/\/[^\s]+)([.,!?])?/g;
-        
-        return parts.map((part, index) => {
-          // Code block formatting
-          if (part.startsWith('```')) {
-            const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
-            if (!match) return part;
-            
-            const [, language = '', code] = match;
-            const isCopied = copiedIndex === index;
+    const formatMessage = (text: string) => {
+      const parts = text.split(/(```[\s\S]*?```)/);
+      const urlPattern = /(\s|^)((?:https?:\/\/)?(?:[a-zA-Z0-9-]+\.)?world\.org\/[^\s.,!?]*|https?:\/\/[^\s]+)([.,!?])?/g;
+      
+      return parts.map((part, index) => {
+        if (part.startsWith('```')) {
+          const match = part.match(/```(\w+)?\n([\s\S]*?)```/);
+          if (!match) return part;
+          
+          const [, language = '', code] = match;
+          const isCopied = copiedIndex === index;
 
-            return (
-              <pre key={index} className="my-2 bg-blue-950 rounded-lg p-3 relative">
-                <div className="flex justify-between items-center mb-2">
-                  {language && (
-                    <div className="text-xs text-indigo-50">{language}</div>
-                  )}
-                  <button
-                    onClick={() => handleCopy(code, index)}
-                    className={`
-                      text-xs px-2 py-1 rounded absolute top-2 right-2 bg-black text-white
-                      transition-all duration-200 flex items-center gap-1
-                      ${isCopied 
-                        ? 'bg-green-800 text-green-100' 
-                        : 'bg-neutral-800 text-stone-400 hover:text-stone-200'
-                      }
-                    `}
-                  >
-                    {isCopied ? 'Copied!' : <CopyIcon />}
-                  </button>
-                </div>
-                <code className="text-stone-100 font-mono text-xs block p-0.5">
-                  {code.trim()}
-                </code>
-              </pre>
-            );
-          };
+          return (
+            <pre key={index} className="my-2 bg-blue-950 rounded-lg p-3 relative">
+              <div className="flex justify-between items-center mb-2">
+                {language && (
+                  <div className="text-xs text-indigo-50">{language}</div>
+                )}
+                <button
+                  onClick={() => handleCopy(code, index)}
+                  className={`
+                    text-xs px-2 py-1 rounded absolute top-2 right-2 bg-black text-white
+                    transition-all duration-200 flex items-center gap-1
+                    ${isCopied 
+                      ? 'bg-green-800 text-green-100' 
+                      : 'bg-neutral-800 text-stone-400 hover:text-stone-200'
+                    }
+                  `}
+                >
+                  {isCopied ? 'Copied!' : <CopyIcon />}
+                </button>
+              </div>
+              <code className="text-stone-100 font-mono text-xs block p-0.5">
+                {code.trim()}
+              </code>
+            </pre>
+          );
+        }
           
           // Regular text formatting
           return (
             <div key={index} className="whitespace-pre-wrap my-1">
               {part.split('\n').map((line, i) => {
-                // Format URLs with black color
                 let formattedLine = line.replace(urlPattern, (_match, space, url, punctuation = '') => {
                   const cleanUrl = url.startsWith('http') ? url : `https://${url}`;
                   return `${space}<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-[#09090b] hover:text-[#09090b] underline whitespace-wrap overflow-hidden text-ellipsis">${url}</a>${punctuation}`;
                 });
-
-                // Then format bold text
+  
                 formattedLine = formattedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                 
-                // Bullet points
                 if (line.trim().startsWith('•')) {
                   return (
                     <div className="my-1 pl-3">
@@ -407,18 +591,18 @@ export default function ChatInterface() {
           
                 // Numbered lists
                 const numberMatch = line.match(/^\d+\./);
-                if (numberMatch) {
-                  return (
-                    <div className="my-1 pl-3">
-                      <div key={i} className="flex items-start space-x-2 py-0.5">
-                        <span className="text-gray-400 min-w-[16px]">{numberMatch[0]}</span>
-                        <span dangerouslySetInnerHTML={{ 
-                          __html: formattedLine.slice(numberMatch[0].length) 
-                        }} />
-                      </div>
+              if (numberMatch) {
+                return (
+                  <div className="my-1 pl-3">
+                    <div key={i} className="flex items-start space-x-2 py-0.5">
+                      <span className="text-gray-400 min-w-[16px]">{numberMatch[0]}</span>
+                      <span dangerouslySetInnerHTML={{ 
+                        __html: formattedLine.slice(numberMatch[0].length) 
+                      }} />
                     </div>
-                  );
-                }
+                  </div>
+                );
+              }
           
                 // Regular paragraph
                 return line ? (
@@ -430,12 +614,12 @@ export default function ChatInterface() {
         });
       };
   
-    return (
-      <div className="message-content space-y-3">
-        {formatMessage(content)}
-      </div>
-    );
-  };
+      return (
+        <div className="message-content space-y-3">
+          {formatMessage(content)}
+        </div>
+      );
+    };
 
   useEffect(() => {
     const smoothScroll = () => {
@@ -444,41 +628,40 @@ export default function ChatInterface() {
       const targetPosition = chatContainerRef.current.scrollHeight;
       const startPosition = chatContainerRef.current.scrollTop;
       const distance = targetPosition - startPosition;
-      const duration = 750; // Increase this number for slower/smoother scroll
+      const duration = 750;
       let start: number;
-  
+
       const animation = (currentTime: number) => {
         if (!start) start = currentTime;
         const timeElapsed = currentTime - start;
         const progress = Math.min(timeElapsed / duration, 1);
-  
-        // Easing function for smoother animation
+
         const easeOutCubic = (x: number): number => {
           return 1 - Math.pow(1 - x, 3);
         };
-  
+
         if (chatContainerRef.current) {
           const position = startPosition + distance * easeOutCubic(progress);
           chatContainerRef.current.scrollTop = position;
         }
-  
+
         if (progress < 1) {
           requestAnimationFrame(animation);
         }
       };
-  
+
       requestAnimationFrame(animation);
     };
   
     smoothScroll();
-  }, [messages]);  
+  }, [messages]);
 
   // New clear chat function
   const clearChatHistory = () => {
     try {
       const initialMessage: Message[] = [{
         content: `Hi! 👋 I'm World Helper. Ask me anything about World!`,
-        role: 'assistant' as const,
+        role: 'assistant',
         timestamp: formatTime()
       }];
       
@@ -523,6 +706,9 @@ export default function ChatInterface() {
             <p>
               Any reference to third-party products, services, or organizations is for informational purposes only and does not constitute or imply endorsement, sponsorship, or recommendation. Information provided through this app is sourced from publicly available resources and is shared under fair use principles for educational and informational purposes only.
             </p>
+            <div className="mt-6 p-3 bg-neutral-50 border border-neutral-100 rounded-lg text-center text-sm text-neutral-600">
+              Made with <Heart className="w-4 h-4 inline-block text-red-500 mx-0.5" strokeWidth={2.5} /> by Jim
+            </div>
             </div>
           </div>
         );
@@ -705,37 +891,41 @@ export default function ChatInterface() {
                 <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
             </button>
-            {showConfirmation && (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
-        <h3 className="font-semibold text-lg mb-4">Clear Chat History?</h3>
-        <p className="text-gray-600 mb-6">This will remove your current conversation. This action cannot be undone. Are you sure you want to clear this chat?</p>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => {
-              clearChatHistory();
-              setShowConfirmation(false);
-            }}
-            className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => setShowConfirmation(false)}
-            className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-          >
-            Cancel
-          </button>
+                  {/* Clear Chat Confirmation Modal */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg max-w-sm w-full mx-4">
+            <h3 className="font-semibold text-lg mb-4">Clear Chat History?</h3>
+            <p className="text-gray-600 mb-6">
+              This will remove your current conversation. This action cannot be undone. 
+              Are you sure you want to clear this chat?
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => {
+                  clearChatHistory();
+                  setShowConfirmation(false);
+                }}
+                className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setShowConfirmation(false)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
   )}   
             <button 
               onClick={() => {
                 setIsDrawerOpen(false);
                 setCurrentView('main');
               }}
-              className="w-full px-4 py-3 text-center bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-archivo"
+              className="w-full px-4 py-3 text-center bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-ibm"
             >
               Close
             </button>
@@ -748,20 +938,25 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="fixed top-0 w-full bg-white border-b z-10 drop-shadow-md">
-        <div className="flex justify-between items-center px-3 py-3">
-          <div className="logo-container">
-            <img 
-              src={Logo} 
-              alt="World Helper" 
-              className="logo-image h-8"
-              draggable="false"
-            />
-          </div>
+{/* Header */}
+<div 
+    className={`
+      fixed top-0 w-full bg-white border-b z-10 transition-transform duration-300 ease-in-out
+      ${!isHeaderVisible ? '-translate-y-full' : 'translate-y-0'}
+    `}
+  >
+    <div className="flex justify-between items-center px-3 py-3">
+      <div className="logo-container">
+        <img 
+          src={Logo} 
+          alt="World Helper" 
+          className="w-44 object-contain"
+          draggable="false"
+        />
+      </div>
           
-          {/* Menu Button */}
-          <button 
+        {/* Menu Button */}
+        <button 
             onClick={() => setIsDrawerOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -770,39 +965,39 @@ export default function ChatInterface() {
         </div>
       </div>
 
-      {/* Custom Drawer */}
+      {/* Drawer */}
       {isDrawerOpen && (
-  <>
-    <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" />
-    <div
-      ref={drawerRef}
-      className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[20px] z-50 
-                transform transition-transform duration-300 ease-out max-h-[90vh] overflow-y-auto"
-      style={{
-        boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.1)',
-        animation: 'slideUp 300ms ease-out'
-      }}
-    >
-      <div className="p-4">
-        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
-        {renderDrawerContent(currentView as DrawerView)}
-      </div>
-    </div>
-  </>
-)}
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" />
+          <div
+            ref={drawerRef}
+            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[20px] z-50 
+                      transform transition-transform duration-300 ease-out max-h-[90vh] overflow-y-auto"
+            style={{
+              boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.1)',
+              animation: 'slideUp 300ms ease-out'
+            }}
+          >
+            <div className="p-4">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6" />
+              {renderDrawerContent(currentView as DrawerView)}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Messages Container */}
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6 text-sm font-archivo transition-all duration-750 ease-out"
->
-          {messages.map((message: Message, index: number) => (
-            <div
-              key={index}
-              className={`flex flex-col ${
-                message.role === 'user' ? 'items-end' : 'items-start'
-              }`}
-            >
+        className="flex-1 overflow-y-auto pt-20 pb-32 px-4 space-y-6 text-sm font-ibm transition-all duration-750 ease-out bg-neutral-50"
+      >
+        {messages.map((message: Message, index: number) => (
+          <div
+            key={index}
+            className={`flex flex-col ${
+              message.role === 'user' ? 'items-end' : 'items-start'
+            }`}
+          >
             {/* Sender name and timestamp */}
             <div className={`
               flex items-center gap-2 mb-1 px-2
@@ -818,23 +1013,24 @@ export default function ChatInterface() {
 
 
 
-{/* Message bubble */}
-<div
-  className={`
-    max-w-[100%] rounded-2xl px-4 py-3 font-archivo transition delay-250 duration-300 ease-in-out
-    ${message.role === 'user' 
-      ? 'bg-[#171717] text-[#e5e5e5] rounded-br-none ml-4 text-s'   
-      : 'bg-[#ffffff] text-[#09090b] rounded-bl-none mr-4 border border-[#e5e7eb] text-s leading-5'
-    }
-    relative hover:border-[#a1a1aa] transition-colors duration-200
-  `}
->
-  <MessageContent content={message.content} />
-</div>
+  {/* Message bubble */}
+  <div
+              className={`
+                max-w-[90%] rounded-2xl px-4 py-3 font-ibm transition delay-250 duration-300 ease-in-out
+                ${message.role === 'user' 
+                  ? 'bg-slate-950	 text-neutral-50 rounded-br-none ml-4 text-sm subpixel-antialiased'   
+                  : 'bg-neutral-50 text-slate-950 rounded-bl-none mr-4 border border-neutral-300 text-sm leading-5 subpixel-antialiased'
+                }
+                relative hover:border-[#a1a1aa] transition-colors duration-300
+              `}
+            >
+              <MessageContent content={message.content} />
+            </div>
           </div>
         ))}
         
-        {isLoading && (
+                {/* Loading indicator */}
+                {isLoading && (
           <div className="flex flex-col items-start">
             <div className="flex items-center gap-2 mb-1 px-2">
               <span className="text-xs font-medium text-gray-600">
@@ -855,62 +1051,179 @@ export default function ChatInterface() {
         )}
       </div>
 
-      {/* Input Container */}
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 font-archivo drop-shadow-2xl">
-  <form 
-    onSubmit={sendMessage}
-    className="flex flex-col gap-2 max-w-screen-md mx-auto"
-  >
-    <div className="flex items-center gap-2">
-      <input
-        ref={inputRef}
-  autoFocus
-        type="text"
-        value={inputMessage}
-        onChange={handleInputChange}
-        placeholder="Type a message..."
-        maxLength={800}
-        className={`
-          flex-1 p-3 border rounded-lg bg-gray-60 
-          focus:outline-none focus:ring-2 focus:ring-black/5 
-          focus:border-black text-[14px]
-          ${inputError ? 'border-red-500' : ''}
-        `}
-        disabled={isLoading}
-      />
-<button
-  type="submit"
-  disabled={isLoading || !inputMessage.trim() || !!inputError}
-  className="send-button"
+{/* Quick Action Buttons */}
+<div 
+  className={`
+    fixed left-0 right-0 bg-neutral-50 border-t-2 border-neutral-500 p-4 transform transition-transform duration-300 ease-out
+    ${showQuickActions ? 'translate-y-0' : 'translate-y-full'}
+  `}
+  style={{
+    bottom: '80px',
+    transitionProperty: 'transform',
+  }}
 >
-  <span className="relative z-10">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      className="w-13 h-5"
+  <div className="relative max-w-screen-md mx-auto">
+    {/* Left shadow */}
+    <div 
+      className={`
+        absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10
+        pointer-events-none transition-opacity duration-200
+        ${canScrollLeft ? 'opacity-100' : 'opacity-0'}
+      `}
+    />
+    
+    {/* Right shadow */}
+    <div 
+      className={`
+        absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10
+        pointer-events-none transition-opacity duration-200
+        ${canScrollRight ? 'opacity-100' : 'opacity-0'}
+      `}
+    />
+
+    <div 
+      ref={scrollRef}
+      className="max-w-screen-md mx-auto overflow-x-auto scrollbar-hide select-none"
+      onMouseDown={handleDragStart}
+      onMouseUp={handleDragEnd}
+      onMouseLeave={handleDragEnd}
+      onMouseMove={handleDragMove}
+      onTouchStart={handleDragStart}
+      onTouchEnd={handleDragEnd}
+      onTouchMove={handleDragMove}
+      onScroll={() => {
+        if (scrollRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+          setCanScrollLeft(scrollLeft > 0);
+          setCanScrollRight(scrollLeft < scrollWidth - clientWidth);
+        }
+      }}
     >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M5 12h14M12 5l7 7-7 7"
-      />
-    </svg>
-  </span>
-</button>
+      <div className={`flex gap-2 pb-2 min-w-max ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}>
+
+        <button className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2">
+        <BadgeHelp size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        What is World ID?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("How can I find the nearest Orb location?")}
+        className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <MapPin size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        How can I find the nearest Orb location?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("What's new in the latest World App update?")}
+        className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <Bell size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        What's the latest World App update?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("How do I integrate World ID into my app?")}
+        className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <Code2 size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        How do I integrate World ID into my app?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("Is World ID verification free?")}
+        className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <ScanEye size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        Is World ID verification free?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("What happens after Orb verification?")}
+        className="group flex-none p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <BadgeHelp size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        What happens after Orb verification?
+      </button>
+      <button
+        onClick={() => !hasMoved && handleQuickAction("How secure is World and how does the Orb protect my privacy?")}
+        className="group flex-none mr-3 p-3 px-3 text-xs text-center border border-[#000] rounded-lg text-slate-950 hover:bg-slate-950 hover:text-neutral-100	transition-colors font-ibm whitespace-nowrap flex items-center gap-2"
+      >
+        <GlobeLock size={14} className="text-slate-950 group-hover:text-neutral-100" />
+        How secure is World and the Orb?
+      </button>
+      </div>
     </div>
-    {inputError && (
-      <span className="text-xs text-red-500 px-3">
-        {inputError}
-      </span>
-    )}
-    <span className="text-xs text-gray-400 px-3">
-      World Helper may be wrong, please double check important information.
-    </span>
-  </form>
+  </div>
 </div>
+
+            {/* Input Container */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 font-ibm drop-shadow-2xl">
+            <form 
+              onSubmit={sendMessage}
+              className="flex flex-col gap-2 max-w-screen-md mx-auto"
+            >
+          <div className="flex items-center gap-2">
+                  {/* Toggle Button */}
+      <button
+        type="button"
+        onClick={() => setShowQuickActions(prev => !prev)}
+        className="p-2 text-neutral-50 bg-slate-950 rounded-lg transition-colors"
+        aria-label={showQuickActions ? "Hide quick actions" : "Show quick actions"}
+      >
+        <svg 
+          className={`w-5 h-5 text-neutral-50 hover:text-slate-300 transform transition-transform duration-300 ${showQuickActions ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
+            <input
+              ref={inputRef}
+              autoFocus
+              type="text"
+              value={inputMessage}
+              onChange={handleInputChange}
+              placeholder="Type a message..."
+              maxLength={800}
+              className={`
+                flex-1 p-3 border rounded-lg bg-gray-60 
+                focus:outline-none focus:ring-2 focus:ring-slate-950/5 
+                focus:border-black text-[14px]
+                ${inputError ? 'border-red-500' : ''}
+              `}
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !inputMessage.trim() || !!inputError}
+              className="send-button"
+            >
+              <span className="relative z-10">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="w-13 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 12h14M12 5l7 7-7 7"
+                  />
+                </svg>
+              </span>
+            </button>
+          </div>
+          {inputError && (
+            <span className="text-xs text-red-500 px-3">
+              {inputError}
+            </span>
+          )}
+          <span className="text-xs text-gray-400 px-3">
+            World Helper may be wrong, please double check important information.
+          </span>
+        </form>
+      </div>
     </div>
   );
 }

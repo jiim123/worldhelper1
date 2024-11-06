@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'archivo': ['Archivo', 'sans-serif'],
+        'ibm': ['IBM Plex Sans', 'sans-serif'],
       },
     },
   },
